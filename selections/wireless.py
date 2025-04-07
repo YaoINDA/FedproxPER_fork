@@ -15,7 +15,18 @@ def dB2power(x):
     return np.exp(x/10*np.log(10))
 
 def wireless_param(args, data_weight, nb_data_assigned):
-    wireless_arg = {
+    """
+    Initialize wireless parameters for federated learning simulation.
+    
+    Args:
+    args: argparse.Namespace object containing program configuration
+    data_weight: numpy array of data weights for each client
+    nb_data_assigned: int, total number of data points assigned
+
+    Returns:
+    dict: Dictionary of wireless parameters
+    """
+    wireless_arg = { 
         'radius':args.cell_radius,
         'ampli': 15,
         'N0':dB2power(-150),

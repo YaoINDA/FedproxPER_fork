@@ -65,8 +65,10 @@ def test_img(net_g, datatest, args):
     class_accuracy = dict()
 
     for idx, (data, target) in enumerate(data_loader):
-        target = target.cuda()
-        data = data.cuda()
+        # target = target.cuda()
+        # data = data.cuda()
+        data, target = data.to(args.device), target.to(args.device) #switch to CPU if GPU is not there
+
         log_probs = net_g(data)
         test_loss += F.cross_entropy(log_probs, target, reduction='sum').item()
         y_pred = log_probs.data.max(1, keepdim=True)[1]

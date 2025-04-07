@@ -1,0 +1,17 @@
+name: fedprox_env
+channels:
+  - defaults
+  - conda-forge
+  - pytorch
+  - nvidia
+dependencies:
+  - python=3.11
+  - pytorch
+  - torchvision
+  - torchaudio
+  - cudatoolkit=11.1
+  - matplotlib
+  - scikit-learn
+  - cvxpy
+  - tqdm
+  - wandb
