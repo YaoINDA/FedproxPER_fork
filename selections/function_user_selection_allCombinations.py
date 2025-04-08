@@ -153,7 +153,7 @@ def gradient_obj2(x,  weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_si
     grad[x<gamma] = 2/gamma[x<gamma] * np.exp(-2)
     return -grad
 
-def objective_func_fbl(x, weights, h_i, N0, B, m, K, alpha, beta, P_max, P_sum, blocklength, data_size, theta, Tslot, later_weights):
+def objective_func_fbl(x, weights, h_i, N0, B, m, K, alpha, beta, P_max, P_sum,  data_size, theta, Tslot, later_weights, blocklength):
     D_i = m*N0*B/h_i
     snr = x/D_i  # Signal-to-noise ratio
     # Using error_prob_fbl for finite blocklength regime
@@ -161,21 +161,21 @@ def objective_func_fbl(x, weights, h_i, N0, B, m, K, alpha, beta, P_max, P_sum, 
     err_prob = error_prob_fbl(snr, blocklength, data_size/blocklength)
     mask = snr <= 0
     err_prob[mask] = 1.0
-    return -1 * np.sum(weights * err_prob) - np.sum(later_weights)
+    return 1 * np.sum(weights * err_prob) - np.sum(later_weights)
 
 
 
-def make_const_P_l(i, x, weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights):
-    def f(x, weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights):
+def make_const_P_l(i, x, weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights, blocklength):
+    def f(x, weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights, blocklength):
         return x[i]- m* B*N0 /h_i /2 
     return f
 
-def make_const_P_u(i, x, weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights):
-    def f(x, weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights):
+def make_const_P_u(i, x, weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights, blocklength):
+    def f(x, weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights, blocklength):
         return P_max - x[i]
     return f
 
-def const_P_sum(x, weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights):
+def const_P_sum(x, weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights, blocklength):
     return P_sum - np.sum(x) - theta/Tslot * np.sum(data_size)
 
 def flat_constraints(cons_list):
@@ -207,9 +207,9 @@ def solve_opti_wrt_P(weights, h_i, N0, B, m, K, alpha, beta, P_max, P_sum, opti_
 
     x0= initialization(int(K), P_max, P_sum)
     x = x0
-    const_P_l = [make_const_P_l(i, x, weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights)
+    const_P_l = [make_const_P_l(i, x, weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights,blocklength)
                         for i in range(K)]
-    const_P_u = [make_const_P_u(i, x, weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights)
+    const_P_u = [make_const_P_u(i, x, weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights, blocklength)
                         for i in range(K)]
     ieqcons = [const_P_l,const_P_u, const_P_sum]
     ieqcons_flat = flat_constraints(ieqcons)
@@ -255,7 +255,7 @@ def solve_opti_wrt_P(weights, h_i, N0, B, m, K, alpha, beta, P_max, P_sum, opti_
         # this is solve the optimization problem wrt P for FBL error model
     elif opti_pb == 'P_FBL':
         yoyo = opt.minimize(objective_func_fbl, x0,
-                        args=(weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,blocklength, data_size, theta, Tslot, later_weights),
+                        args=(weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum, data_size, theta, Tslot, later_weights, blocklength),
                         method='trust-constr', jac=None, #no gradient for FBL   
                         hess=None, constraints=const_list, bounds = None, #var_bounds,
                         options={'gtol':1e-7, 'xtol': 1e-7,

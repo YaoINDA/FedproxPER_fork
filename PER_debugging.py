@@ -21,7 +21,7 @@ def debug_fbl_optimization():
     wireless_arg = update_wireless(args, wireless_arg, args.wireless_seed)
     
     # Select the first 10 UEs
-    K = 10
+    K = 3
     user_indices = np.arange(K)
     print(f"\n=== Selected UEs: {user_indices} ===")
     
@@ -37,7 +37,7 @@ def debug_fbl_optimization():
     Tslot = wireless_arg['Tslot']
     
     # For FBL error model, we need data size and blocklength
-    data_size = np.ones(K) * 1000  # 1000 bits per UE
+    data_size = np.ones(K) * 700  # 1000 bits per UE
     weights = np.ones(K)  # Equal weights
     later_weights = np.zeros(K)  # No later weights
     blocklength = np.ones(K) * 500  # 500 channel uses per UE
@@ -73,7 +73,7 @@ def debug_fbl_optimization():
             weights, h_i, N0, B, m, K, 
             wireless_arg['alpha'], wireless_arg['beta'],
             P_max, P_sum, 'P_FBL', data_size, theta, Tslot, 
-            later_weights, blocklength
+            later_weights, blocklength=1000
         )
         
         # Print optimization results
@@ -96,7 +96,11 @@ def debug_fbl_optimization():
         print(f"\nTotal power consumption: {total_power:.6f} / {P_sum:.6f}")
         
     except Exception as e:
-        print(f"Error in optimization: {e}")
-        
+        tprint(f"Error in optimization: {e}")        # Print weights used in objective function
+        print("\n=== Weights Used in Objective ===")
+        print(f"{'UE Index':<10} {'Weight':<15}")
+        print("-" * 30)
+        for i, ue_idx in enumerate(user_indices):
+            print(f"{ue_idx:<10} {weights[i]:<15.6f}")
 if __name__ == "__main__":
     debug_fbl_optimization()
