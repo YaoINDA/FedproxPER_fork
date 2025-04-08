@@ -8,6 +8,7 @@ from selections.function_AoU import solve_cstObj_pb
 import torch
 import copy
 import pickle 
+from scipy.stats import norm # need this for error_prob_fbl
 # import wandb
 
 
@@ -43,7 +44,8 @@ def wireless_param(args, data_weight, nb_data_assigned):
         'beta': 0.001,
         'kappa':10**(-28),
         'freq_comp': 2*10**9,
-        'C': 2*10**4
+        'C': 2*10**4,
+        'T_total': args.total_blocklength
         }
     np.random.seed(args.wireless_seed )
     wireless_arg['distance']  = np.sqrt(np.random.uniform(1, wireless_arg['radius']  ** 2, args.total_UE))
@@ -92,6 +94,43 @@ def update_wireless(args, wireless_arg, seed):
     wireless_arg['o_i']   = copy.deepcopy(o_i)
     wireless_arg['h_i']   = copy.deepcopy(h_i)
     return wireless_arg
+
+def error_prob_fbl(snr, m, r):
+    """
+    Calculate the error probability for finite blocklength communications.
+    
+    Parameters:
+    -----------
+    snr : float or numpy.ndarray
+        Signal-to-noise ratio
+    m : float or numpy.ndarray
+        Blocklength allocated to the corresponding UE
+    r : float or numpy.ndarray
+        Coding rate (r = d/m, where d is the data size)
+    
+    Returns:
+    --------
+    err : float or numpy.ndarray
+        Error probability
+    """
+    # Calculate channel dispersion
+    V = 1 - 1 / (snr + 1)**2
+    
+    # Calculate the normalized decoding error probability
+    w = (m / V)**0.5 * (np.log2(1 + snr) - r)
+    
+    # Handle cases with imaginary results (due to numerical issues)
+    if isinstance(w, np.ndarray):
+        w[np.iscomplex(w)] = -np.inf
+        w[snr < 0] = -np.inf
+    else:
+        if np.iscomplex(w) or snr < 0:
+            w = -np.inf
+    
+    # Calculate the error probability using Q-function (via complementary CDF of normal distribution)
+    err = norm.cdf(-w)
+    
+    return err
 
 def objective_funtion(x, alpha, h_i, S_i, data_size, const, later_weights,P_max, incr,decr):
     vec = S_i * np.exp(-alpha / h_i / x) + later_weights
@@ -248,6 +287,9 @@ def user_selection(args, wireless_arg, seed,  data_size,weights,later_weights):
     proba_success_avg = np.zeros(args.total_UE)
     proba_success_avg[snr_avg>0] =  np.exp(-m / snr_avg[snr_avg>0])
 
+    #communication error based on finite blocklength
+
+
     active_success_clients = []
     fails = 0
     np.random.seed(seed+123)
@@ -259,3 +301,5 @@ def user_selection(args, wireless_arg, seed,  data_size,weights,later_weights):
             fails += 1
     print("number of failed clients," ,fails)
     return list(set(active_success_clients)), proba_success_avg, fails, np.mean(proba_success[active_clients]), obj_value
+
+

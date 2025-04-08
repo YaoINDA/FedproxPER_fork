@@ -7,6 +7,7 @@ import numpy as np
 import scipy.optimize as opt
 import time
 from selections.function_LR import opti_LR_for_naif
+from scipy.stats import norm # need this for error_prob_fbl
 #%% Parameters
 def dB2power(x):
     return np.exp(x/10*np.log(10))
@@ -46,6 +47,41 @@ def dB2power(x):
 # weights = np.ones(N)
 # x= np.zeros(N)
 
+def error_prob_fbl(snr, blocklength, rate):
+    """
+    Calculate the error probability for finite blocklength communications.
+    
+    Parameters:
+    -----------
+    snr : float or numpy.ndarray
+        Signal-to-noise ratio
+    blocklength : float or numpy.ndarray
+        Blocklength allocated to the corresponding UE
+    rate : float or numpy.ndarray
+        Coding rate (r = d/m, where d is the data size)
+    
+    Returns:
+    --------
+    err : float or numpy.ndarray
+        Error probability
+    """
+    # Calculate channel dispersion
+    V = 1 - 1 / (snr + 1)**2
+    
+    # Calculate the normalized decoding error probability
+    w = (blocklength / V)**0.5 * (np.log2(1 + snr) - rate)
+    
+    # Handle cases with imaginary results (due to numerical issues)
+    if isinstance(w, np.ndarray):
+        w[np.iscomplex(w)] = -np.inf
+        w[snr < 0] = -np.inf
+    else:
+        if np.iscomplex(w) or snr < 0:
+            w = -np.inf
+    
+    # Calculate the error probability using Q-function (via complementary CDF of normal distribution)
+    err = norm.cdf(-w)
+    return err
 
 #%% Define the optimization problem to solve for each combination.
 def objective_func(x,  weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights):
@@ -116,6 +152,18 @@ def gradient_obj2(x,  weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_si
     grad = weights * (m*N0*B/np.square(x)/h_i) * np.exp(-m*N0*B/x/h_i)
     grad[x<gamma] = 2/gamma[x<gamma] * np.exp(-2)
     return -grad
+
+def objective_func_fbl(x, weights, h_i, N0, B, m, K, alpha, beta, P_max, P_sum, blocklength, data_size, theta, Tslot, later_weights):
+    D_i = m*N0*B/h_i
+    snr = x/D_i  # Signal-to-noise ratio
+    # Using error_prob_fbl for finite blocklength regime
+    # For SNR <= 0, error probability is 1
+    err_prob = error_prob_fbl(snr, blocklength, data_size/blocklength)
+    mask = snr <= 0
+    err_prob[mask] = 1.0
+    return -1 * np.sum(weights * err_prob) - np.sum(later_weights)
+
+
 
 def make_const_P_l(i, x, weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights):
     def f(x, weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights):
@@ -200,6 +248,15 @@ def solve_opti_wrt_P( weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum, opti_p
                         hess=None, constraints=const_list, bounds = None, #var_bounds,
                         options={'gtol':1e-7, 'xtol': 1e-7,
                                   'maxiter': 5000, 'verbose':0})
+        # this is solve the optimization problem wrt P for FBL error model
+    elif opti_pb == 'P_FBL':
+        yoyo = opt.minimize(objective_func_fbl, x0,
+                        args=(weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,blocklength, data_size, theta, Tslot, later_weights),
+                        method='trust-constr', jac=None, #no gradient for FBL   
+                        hess=None, constraints=const_list, bounds = None, #var_bounds,
+                        options={'gtol':1e-7, 'xtol': 1e-7,
+                                  'maxiter': 5000, 'verbose':0})
+        
     elif opti_pb == 'test_convex_ext':
         yoyo = opt.minimize(objective_func_conc, x0,
                         args=(weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights),
