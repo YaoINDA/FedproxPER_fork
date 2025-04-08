@@ -196,11 +196,15 @@ def initialization(N, P_max, P_sum):
     return x0
 
 
-
-
-
-def solve_opti_wrt_P( weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum, opti_pb,data_size, theta, Tslot, later_weights):
+def solve_opti_wrt_P(weights, h_i, N0, B, m, K, alpha, beta, P_max, P_sum, opti_pb, data_size, theta, Tslot, later_weights, blocklength=None):
     K = int(K)
+    # Create array of blocklengths if only a scalar was provided
+    if blocklength is not None:
+        if np.isscalar(blocklength):
+            blocklength = blocklength * np.ones(K)
+    else:
+        blocklength = 500 * np.ones(K)
+
     x0= initialization(int(K), P_max, P_sum)
     x = x0
     const_P_l = [make_const_P_l(i, x, weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights)
@@ -214,11 +218,11 @@ def solve_opti_wrt_P( weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum, opti_p
         const_dict = dict()
         const_dict['type'] = 'ineq'
         const_dict['fun'] = cons
-        const_dict['args'] = (weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights)
+        const_dict['args'] = (weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights, blocklength)
         const_list.append(const_dict)
     if opti_pb == 'P1':
         yoyo = opt.minimize(objective_func, x0,
-                        args=(weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights),
+                        args=(weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights, blocklength),
                         method='trust-constr', jac=gradient_obj,
                         hess=None, constraints=const_list, bounds = None, #var_bounds,
                         options={'gtol':1e-7, 'xtol': 1e-7,
@@ -226,7 +230,7 @@ def solve_opti_wrt_P( weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum, opti_p
     elif opti_pb == 'P2':
 
         yoyo = opt.minimize(objective_func2, x0,
-                        args=(weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights),
+                        args=(weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights, blocklength),
                         method='trust-constr', jac=gradient_obj2,
                         hess=None, constraints=const_list, bounds = None, #var_bounds,
                         options={'gtol':1e-7, 'xtol': 1e-7,
@@ -235,7 +239,7 @@ def solve_opti_wrt_P( weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum, opti_p
     elif opti_pb == 'P1_3':
         # print("Start")
         yoyo = opt.minimize(objective_func3, x0,
-                        args=(weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights),
+                        args=(weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights, blocklength),
                         method='trust-constr', jac=gradient_obj3,
                         hess=None, constraints=const_list, bounds = None, #var_bounds,
                         options={'gtol':1e-7, 'xtol': 1e-7,
@@ -243,7 +247,7 @@ def solve_opti_wrt_P( weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum, opti_p
         # print("End")
     elif opti_pb == 'P1_4':
         yoyo = opt.minimize(objective_func4, x0,
-                        args=(weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights),
+                        args=(weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights, blocklength),
                         method='trust-constr', jac=gradient_obj4,
                         hess=None, constraints=const_list, bounds = None, #var_bounds,
                         options={'gtol':1e-7, 'xtol': 1e-7,
@@ -259,7 +263,7 @@ def solve_opti_wrt_P( weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum, opti_p
         
     elif opti_pb == 'test_convex_ext':
         yoyo = opt.minimize(objective_func_conc, x0,
-                        args=(weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights),
+                        args=(weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights, blocklength),
                         method='trust-constr', jac=gradient_obj_conc,
                         hess=None, constraints=const_list, bounds = None, #var_bounds,
                         options={'gtol':1e-7, 'xtol': 1e-7,
@@ -268,7 +272,7 @@ def solve_opti_wrt_P( weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum, opti_p
     else:
         print('error')
         yoyo = opt.minimize(objective_func, x0,
-                        args=(weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights),
+                        args=(weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights, blocklength),
                         method='trust-constr', jac=gradient_obj,
                         hess=None, constraints=const_list, bounds = None, #var_bounds,
                         options={'gtol':1e-7, 'xtol': 1e-7,
