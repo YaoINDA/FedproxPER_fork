@@ -47,6 +47,9 @@ def dB2power(x):
 # weights = np.ones(N)
 # x= np.zeros(N)
 
+########################################################
+#FBL error probability with Q-function
+########################################################    
 def error_prob_fbl(snr, blocklength, rate):
     """
     Calculate the error probability for finite blocklength communications.
@@ -153,17 +156,88 @@ def gradient_obj2(x,  weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_si
     grad[x<gamma] = 2/gamma[x<gamma] * np.exp(-2)
     return -grad
 
-def objective_func_fbl(x, weights, h_i, N0, B, m, K, alpha, beta, P_max, P_sum,  data_size, theta, Tslot, later_weights, blocklength):
+########################################################
+# fbl error model used for objective function
+########################################################
+def objective_func_fbl(x, weights, h_i, N0, B, m, K, alpha, beta, P_max, P_sum, data_size, theta, Tslot, later_weights, blocklength):
     D_i = m*N0*B/h_i
     snr = x/D_i  # Signal-to-noise ratio
-    # Using error_prob_fbl for finite blocklength regime
-    # For SNR <= 0, error probability is 1
+    
+    # Calculate error probabilities
     err_prob = error_prob_fbl(snr, blocklength, data_size/blocklength)
+    
+    # Ensure error probability is 1 for SNR ≤ 0
     mask = snr <= 0
     err_prob[mask] = 1.0
+    
+    # Return the weighted sum of error probabilities
+    return np.sum(weights * err_prob) - np.sum(later_weights)
+
+########################################################
+# fbl error model with linear approximation used for objective function
+########################################################
+def error_prob_fbl_approx(snr, blocklength, packet_size):
+    """
+    Calculate approximation of error probability for finite blocklength communications.
+    
+    Parameters:
+    -----------
+    snr : float or numpy.ndarray
+        Signal-to-noise ratio (gamma)
+    blocklength : float or numpy.ndarray
+        Blocklength (m)
+    packet_size : float or numpy.ndarray
+        Packet size (D)
+    
+    Returns:
+    --------
+    err_approx : float or numpy.ndarray
+        Approximated error probability
+    """
+    # Calculate alpha parameter
+    alpha = np.exp(packet_size / blocklength) - 1
+    
+    # Calculate mu parameter
+    mu = np.sqrt(blocklength / (np.exp(2 * packet_size / blocklength) - 1))
+    
+    # Calculate nu parameter (though not used in the final calculation)
+    nu = np.sqrt(np.pi / (2 * mu**2))
+    
+    # Calculate error approximation
+    err_approx = 0.5 - (mu / np.sqrt(2 * np.pi)) * (snr - alpha)
+    
+    # Handle cases where approximation might be out of [0,1] bounds
+    if isinstance(err_approx, np.ndarray):
+        err_approx = np.clip(err_approx, 0, 1)
+    else:
+        err_approx = max(0, min(1, err_approx))
+    
+    return err_approx
+
+
+def objective_func_fbl_approx(x, weights, h_i, N0, B, m, K, alpha, beta, P_max, P_sum, data_size, theta, Tslot, later_weights, blocklength):
+    """
+    Objective function using approximated error probability for finite blocklength.
+    
+    Parameters are the same as objective_func_fbl, but uses the approximation method
+    for error probability calculation.
+    """
+    # Calculate SNR
+    D_i = m*N0*B/h_i
+    snr = x/D_i
+    
+    # Use the approximation method for error probability
+    err_prob = error_prob_fbl_approx(snr, blocklength, data_size)
+    
+    # Handle cases where SNR is non-positive
+    mask = snr <= 0
+    if isinstance(mask, np.ndarray):
+        err_prob[mask] = 1.0
+    elif mask:
+        err_prob = 1.0
+    
+    # Return the objective value (same structure as the original function)
     return 1 * np.sum(weights * err_prob) - np.sum(later_weights)
-
-
 
 def make_const_P_l(i, x, weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights, blocklength):
     def f(x, weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights, blocklength):
@@ -177,6 +251,30 @@ def make_const_P_u(i, x, weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data
 
 def const_P_sum(x, weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights, blocklength):
     return P_sum - np.sum(x) - theta/Tslot * np.sum(data_size)
+
+
+def make_const_err_positive(i, x, weights, h_i, N0, B, m, K, alpha, beta, P_max, P_sum, data_size, theta, Tslot, later_weights, blocklength):
+    """
+    Constraint to ensure the approximated error probability is positive.
+    
+    This creates a constraint function for each user i that returns a non-negative value
+    when the error probability approximation is positive (>= 0).
+    """
+    def f(x, weights, h_i, N0, B, m, K, alpha, beta, P_max, P_sum, data_size, theta, Tslot, later_weights, blocklength):
+        # Calculate SNR for user i
+        D_i = m*N0*B/h_i[i]
+        snr = x[i]/D_i
+        
+        # Calculate alpha parameter for user i
+        alpha_param = np.exp(data_size[i] / blocklength[i]) - 1
+        
+        # Calculate mu parameter for user i
+        mu = np.sqrt(blocklength[i] / (np.exp(2 * data_size[i] / blocklength[i]) - 1))
+        
+        # Return value is non-negative when error probability is positive
+        return -0.5 + (mu / np.sqrt(2 * np.pi)) * (snr - alpha_param)
+    
+    return f
 
 def flat_constraints(cons_list):
     list_flat = []
@@ -212,6 +310,13 @@ def solve_opti_wrt_P(weights, h_i, N0, B, m, K, alpha, beta, P_max, P_sum, opti_
     const_P_u = [make_const_P_u(i, x, weights, h_i, N0,B, m, K, alpha, beta, P_max,P_sum,data_size, theta, Tslot, later_weights, blocklength)
                         for i in range(K)]
     ieqcons = [const_P_l,const_P_u, const_P_sum]
+
+    #add a condition to change the constraint for using approximated error probability
+    if opti_pb == 'P_FBL_app':
+        const_err_positive = [make_const_err_positive(i, x, weights, h_i, N0, B, m, K, alpha, beta, P_max, P_sum, data_size, theta, Tslot, later_weights, blocklength)
+                             for i in range(K)]
+        ieqcons.append(const_err_positive)
+
     ieqcons_flat = flat_constraints(ieqcons)
     const_list = []
     for _, cons in enumerate(ieqcons_flat):
@@ -260,6 +365,16 @@ def solve_opti_wrt_P(weights, h_i, N0, B, m, K, alpha, beta, P_max, P_sum, opti_
                         hess=None, constraints=const_list, bounds = None, #var_bounds,
                         options={'gtol':1e-7, 'xtol': 1e-7,
                                   'maxiter': 5000, 'verbose':0})
+        # this is solve the optimization problem wrt P for FBL error model
+        
+    elif opti_pb == 'P_FBL_app':
+        # Use the approximation-based objective function
+        yoyo = opt.minimize(objective_func_fbl_approx, x0,
+                        args=(weights, h_i, N0, B, m, K, alpha, beta, P_max, P_sum, data_size, theta, Tslot, later_weights, blocklength),
+                        method='trust-constr', jac=None, # No gradient provided for this approximation
+                        hess=None, constraints=const_list, bounds=None,
+                        options={'gtol':1e-7, 'xtol': 1e-7,
+                                 'maxiter': 5000, 'verbose':0})    
         
     elif opti_pb == 'test_convex_ext':
         yoyo = opt.minimize(objective_func_conc, x0,

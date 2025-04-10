@@ -20,7 +20,7 @@ def debug_fbl_optimization():
     wireless_arg = wireless_param(args, data_weight, nb_data_assigned)
     wireless_arg = update_wireless(args, wireless_arg, args.wireless_seed)
     
-    # Select the first 10 UEs
+    # Select the first 3 UEs
     K = 3
     user_indices = np.arange(K)
     print(f"\n=== Selected UEs: {user_indices} ===")
@@ -37,7 +37,7 @@ def debug_fbl_optimization():
     Tslot = wireless_arg['Tslot']
     
     # For FBL error model, we need data size and blocklength
-    data_size = np.ones(K) * 700  # 1000 bits per UE
+    data_size = np.ones(K) * 700  # 700 bits per UE
     weights = np.ones(K)  # Equal weights
     later_weights = np.zeros(K)  # No later weights
     blocklength = np.ones(K) * 500  # 500 channel uses per UE
@@ -66,6 +66,34 @@ def debug_fbl_optimization():
         
         print(f"{ue_idx:<10} {h_i[i]:<15.6e} {distance:<15.2f} {max_snr_db:<20.2f}")
     
+    # Test different power allocations to see their objective values
+    print("\n=== Testing Different Power Allocations ===")
+    test_powers = [
+        np.ones(K) * 0.1,  # Very low power
+        np.ones(K) * 1.0,   # Medium power
+        np.ones(K) * P_max  # Maximum power
+    ]
+    
+    for i, power in enumerate(test_powers):
+        # Calculate SNR values
+        D_i = m*N0*B/h_i
+        snr = power/D_i
+        
+        # Calculate error probabilities
+        err_prob = error_prob_fbl(snr, blocklength, data_size/blocklength)
+        # Set error probability to 1 for SNR <= 0
+        mask = snr <= 0
+        err_prob[mask] = 1.0
+        
+        # Calculate objective value
+        obj_val = np.sum(weights * err_prob) - np.sum(later_weights)
+        
+        print(f"\nPower allocation {i+1}: {power}")
+        print(f"SNR values: {snr}")
+        print(f"SNR (dB): {10*np.log10(snr)}")
+        print(f"Error probabilities: {err_prob}")
+        print(f"Objective value: {obj_val:.6f}")
+    
     # Solve the optimization problem using FBL error model
     print("\n=== Solving Optimization Problem with FBL Error Model ===")
     try:
@@ -73,12 +101,23 @@ def debug_fbl_optimization():
             weights, h_i, N0, B, m, K, 
             wireless_arg['alpha'], wireless_arg['beta'],
             P_max, P_sum, 'P_FBL', data_size, theta, Tslot, 
-            later_weights, blocklength=1000
+            later_weights, blocklength=blocklength
         )
         
         # Print optimization results
         print("\n=== Optimization Results ===")
-        print(f"Objective function value: {-obj_value:.6f}")
+        print(f"Objective function value: {obj_value:.6f}")  # Note: no negation here
+        
+        # Calculate SNR and error probabilities for verification
+        D_i = m*N0*B/h_i
+        snr_opt = opt_power/D_i
+        err_prob_opt = error_prob_fbl(snr_opt, blocklength, data_size/blocklength)
+        mask = snr_opt <= 0
+        err_prob_opt[mask] = 1.0
+        
+        # Manually calculate the objective value
+        obj_manual = np.sum(weights * err_prob_opt) - np.sum(later_weights)
+        print(f"Manually calculated objective: {obj_manual:.6f}")
         
         print("\n=== Optimal Power Allocation ===")
         print(f"{'UE Index':<10} {'Power (mW)':<15} {'SNR (dB)':<15} {'Error Prob':<15}")
@@ -87,7 +126,7 @@ def debug_fbl_optimization():
         for i, ue_idx in enumerate(user_indices):
             snr = opt_power[i] * h_i[i] / (N0 * B)
             snr_db = 10 * np.log10(snr) if snr > 0 else float('-inf')
-            error_prob = error_prob_fbl(snr, blocklength[i], data_size[i]/blocklength[i])
+            error_prob = err_prob_opt[i]
             
             print(f"{ue_idx:<10} {opt_power[i]:<15.6f} {snr_db:<15.2f} {error_prob:<15.6f}")
         
@@ -96,11 +135,9 @@ def debug_fbl_optimization():
         print(f"\nTotal power consumption: {total_power:.6f} / {P_sum:.6f}")
         
     except Exception as e:
-        tprint(f"Error in optimization: {e}")        # Print weights used in objective function
-        print("\n=== Weights Used in Objective ===")
-        print(f"{'UE Index':<10} {'Weight':<15}")
-        print("-" * 30)
-        for i, ue_idx in enumerate(user_indices):
-            print(f"{ue_idx:<10} {weights[i]:<15.6f}")
+        print(f"Error in optimization: {e}")
+        import traceback
+        traceback.print_exc()
+
 if __name__ == "__main__":
     debug_fbl_optimization()
