@@ -1,8 +1,8 @@
 import numpy as np
 import torch
 from utils.options import args_parser
-from selections.wireless import dB2power, wireless_param, update_wireless, error_prob_fbl
-from selections.function_user_selection_allCombinations import solve_opti_wrt_P
+from selections.wireless import dB2power, wireless_param, update_wireless
+from selections.function_user_selection_allCombinations import solve_opti_wrt_P, error_prob_fbl_approx
 
 def debug_fbl_optimization():
     # Parse arguments with default values
@@ -21,7 +21,7 @@ def debug_fbl_optimization():
     wireless_arg = update_wireless(args, wireless_arg, args.wireless_seed)
     
     # Select the first 3 UEs
-    K = 3
+    K = 4
     user_indices = np.arange(K)
     print(f"\n=== Selected UEs: {user_indices} ===")
     
@@ -79,63 +79,63 @@ def debug_fbl_optimization():
         D_i = m*N0*B/h_i
         snr = power/D_i
         
-        # Calculate error probabilities
-        err_prob = error_prob_fbl(snr, blocklength, data_size/blocklength)
+        # Calculate error probabilities (approximated FBL)
+        err_prob_app = error_prob_fbl_approx(snr, blocklength, data_size)
         # Set error probability to 1 for SNR <= 0
         mask = snr <= 0
-        err_prob[mask] = 1.0
+        err_prob_app[mask] = 1.0
         
-        # Calculate objective value
-        obj_val = np.sum(weights * err_prob) - np.sum(later_weights)
+        # Calculate objective value for the approximated model
+        obj_val_approx = np.sum(weights * err_prob_app) - np.sum(later_weights)
         
         print(f"\nPower allocation {i+1}: {power}")
         print(f"SNR values: {snr}")
         print(f"SNR (dB): {10*np.log10(snr)}")
-        print(f"Error probabilities: {err_prob}")
-        print(f"Objective value: {obj_val:.6f}")
+        print(f"Error probabilities (approx FBL): {err_prob_app}")
+        print(f"Objective value (approx FBL): {obj_val_approx:.6f}")
     
-    # Solve the optimization problem using FBL error model
-    print("\n=== Solving Optimization Problem with FBL Error Model ===")
+    # Solve the optimization problem using approximated FBL error model
+    print("\n=== Solving Optimization Problem with Approximated FBL Error Model ===")
     try:
-        obj_value, opt_power = solve_opti_wrt_P(
+        obj_value_approx, opt_power_approx = solve_opti_wrt_P(
             weights, h_i, N0, B, m, K, 
             wireless_arg['alpha'], wireless_arg['beta'],
-            P_max, P_sum, 'P_FBL', data_size, theta, Tslot, 
+            P_max, P_sum, 'P_FBL_app', data_size, theta, Tslot, 
             later_weights, blocklength=blocklength
         )
         
         # Print optimization results
-        print("\n=== Optimization Results ===")
-        print(f"Objective function value: {obj_value:.6f}")  # Note: no negation here
+        print("\n=== Optimization Results (Approximated FBL) ===")
+        print(f"Objective function value: {obj_value_approx:.6f}")  
         
         # Calculate SNR and error probabilities for verification
         D_i = m*N0*B/h_i
-        snr_opt = opt_power/D_i
-        err_prob_opt = error_prob_fbl(snr_opt, blocklength, data_size/blocklength)
-        mask = snr_opt <= 0
-        err_prob_opt[mask] = 1.0
+        snr_opt_approx = opt_power_approx/D_i
+        err_prob_opt_approx = error_prob_fbl_approx(snr_opt_approx, blocklength, data_size)
+        mask = snr_opt_approx <= 0
+        err_prob_opt_approx[mask] = 1.0
         
         # Manually calculate the objective value
-        obj_manual = np.sum(weights * err_prob_opt) - np.sum(later_weights)
-        print(f"Manually calculated objective: {obj_manual:.6f}")
+        obj_manual_approx = np.sum(weights * err_prob_opt_approx) - np.sum(later_weights)
+        print(f"Manually calculated objective: {obj_manual_approx:.6f}")
         
-        print("\n=== Optimal Power Allocation ===")
+        print("\n=== Optimal Power Allocation (Approximated FBL) ===")
         print(f"{'UE Index':<10} {'Power (mW)':<15} {'SNR (dB)':<15} {'Error Prob':<15}")
         print("-" * 60)
         
         for i, ue_idx in enumerate(user_indices):
-            snr = opt_power[i] * h_i[i] / (N0 * B)
+            snr = opt_power_approx[i] * h_i[i] / (N0 * B)
             snr_db = 10 * np.log10(snr) if snr > 0 else float('-inf')
-            error_prob = err_prob_opt[i]
+            error_prob = err_prob_opt_approx[i]
             
-            print(f"{ue_idx:<10} {opt_power[i]:<15.6f} {snr_db:<15.2f} {error_prob:<15.6f}")
+            print(f"{ue_idx:<10} {opt_power_approx[i]:<15.6f} {snr_db:<15.2f} {error_prob:<15.6f}")
         
         # Calculate total power
-        total_power = np.sum(opt_power) + theta/Tslot * np.sum(data_size)
-        print(f"\nTotal power consumption: {total_power:.6f} / {P_sum:.6f}")
+        total_power_approx = np.sum(opt_power_approx) + theta/Tslot * np.sum(data_size)
+        print(f"\nTotal power consumption: {total_power_approx:.6f} / {P_sum:.6f}")
         
     except Exception as e:
-        print(f"Error in optimization: {e}")
+        print(f"Error in approximated FBL optimization: {e}")
         import traceback
         traceback.print_exc()
 
