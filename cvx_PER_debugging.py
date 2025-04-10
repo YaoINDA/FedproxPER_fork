@@ -232,9 +232,9 @@ def main():
     
     # Generate weights, data sizes, and blocklengths
     weights = np.ones(K)  # Equal weights
-    later_weights = np.random.rand(K) * 0.1  # Small random values for later weights
-    data_size = np.ones(K) * 400  # 700 bits per user
-    blocklength = np.ones(K) * 600  # 500 channel uses per user
+    later_weights = np.ones(K) * 0.1  # Small random values for later weights
+    data_size = np.ones(K) * 19  # 700 bits per user
+    blocklength = np.ones(K) * 20  # 500 channel uses per user
     
     # Calculate theta
     theta = wireless_arg['kappa'] * wireless_arg['freq_comp']**2 * wireless_arg['C'] * 20 * 60000
