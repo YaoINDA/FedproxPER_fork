@@ -19,6 +19,7 @@ def args_parser():
     parser.add_argument('--momentum', type=float, default=0, help="SGD momentum (default: 0)")
     parser.add_argument('--weight_decay', type=float, default=0, help="SGD weight_decay (default: 0)")
     parser.add_argument('--total_blocklength', type=int, default=1000, help="total blocklength (default: 1000)")
+    parser.add_argument('--packet_size', type=int, default= 500, help="packet size of transmission (default: 500)")
     #parser.add_argument('--split', type=str, default='user', help="train-test split type, user or sample")
 
     # model arguments
