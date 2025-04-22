@@ -39,7 +39,7 @@ def error_prob_fbl_approx(snr, blocklength, packet_size):
     
     return err_approx
 
-def power_allocation_fbl_approx(h_i, weights, later_weights, data_size, blocklength, 
+def power_allocation_fbl_approx(h_i, weights, later_weights, packet_size, blocklength, 
                                 N0, B, P_max, P_sum, theta=0, Tslot=1.0):
     """
     Solve power allocation problem using CVXPY with linear approximation of error probability.
@@ -52,8 +52,8 @@ def power_allocation_fbl_approx(h_i, weights, later_weights, data_size, blocklen
         Weight for each user in the objective function
     later_weights : numpy.ndarray
         Additional weights for each user
-    data_size : numpy.ndarray
-        Data size for each user in bits
+    packet_size : numpy.ndarray
+        Packet size for each user in bits
     blocklength : numpy.ndarray or float
         Blocklength allocated to each user or single value for all users
     N0 : float
@@ -95,20 +95,21 @@ def power_allocation_fbl_approx(h_i, weights, later_weights, data_size, blocklen
     mu_values = np.zeros(K)
     
     for i in range(K):
-        alpha_values[i] = np.exp(data_size[i] / blocklength[i]) - 1
-        mu_values[i] = np.sqrt(blocklength[i] / (np.exp(2 * data_size[i] / blocklength[i]) - 1))
+        alpha_values[i] = np.exp(packet_size[i] / blocklength[i]) - 1
+        mu_values[i] = np.sqrt(blocklength[i] / (np.exp(2 * packet_size[i] / blocklength[i]) - 1))
     
     # Define constraints
     constraints = [
         P >= 0,                  # Power must be non-negative
         P <= P_max,              # Power per user must not exceed maximum
-        cp.sum(P) + theta/Tslot * cp.sum(data_size) <= P_sum,  # Total power constraint
+        cp.sum(P) + theta/Tslot * cp.sum(packet_size) <= P_sum,  # Total power constraint
     ]
     
     # Add constraint to ensure error probability is non-negative
     for i in range(K):
         # Lower bound constraint (error probability >= 0)
-        constraints.append(0.5 - (mu_values[i] / np.sqrt(2 * np.pi)) * (P[i] / D_i[i] - alpha_values[i]) >= 0)
+        epsilon = 1e-6
+        constraints.append(0.5 - (mu_values[i] / np.sqrt(2 * np.pi)) * (P[i] / D_i[i] - alpha_values[i]) >=  -epsilon)
     
     # Define the error probability expression for each user
     err_prob_expressions = []

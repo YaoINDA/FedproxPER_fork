@@ -178,6 +178,7 @@ if __name__ == '__main__':
 
     # FBL-specific parameters
     blocklength = args.total_blocklength // args.active_UE if hasattr(args, 'total_blocklength') else 500
+    packet_size = args.packet_size
 
     # FL Training
     for iter in range(args.round):
@@ -211,7 +212,7 @@ if __name__ == '__main__':
             
             # Use FBL-based user selection instead of the original one
             idxs_users, proba_success_avg, fails, success_rate, obj_values = user_selection_fbl(
-                args, wireless_arg, seed_round, datasize_weight, weights, later_weights, blocklength
+                args, wireless_arg, seed_round, packet_size, weights, later_weights, blocklength
             )
             
             num_trained, list_trained, bool_trained, vanish_index = update_success_trained(

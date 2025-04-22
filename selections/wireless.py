@@ -45,7 +45,7 @@ def wireless_param(args, data_weight, nb_data_assigned):
         'kappa':10**(-28),
         'freq_comp': 2*10**9,
         'C': 2*10**4,
-        'Packet_size': args.packet_size
+        'Packet_size': args.packet_size,
         'T_total': args.total_blocklength
         }
     np.random.seed(args.wireless_seed )

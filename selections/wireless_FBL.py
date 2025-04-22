@@ -44,7 +44,7 @@ def error_prob_fbl(snr, blocklength, rate):
     err = norm.cdf(-w)
     return err
 
-def objective_function_fbl(power, h_i, weights, data_size, blocklength, N0, B, later_weights):
+def objective_function_fbl(power, h_i, weights, packet_size, blocklength, N0, B, later_weights):
     """
     Calculate objective function value based on FBL error probability model.
     
@@ -56,8 +56,8 @@ def objective_function_fbl(power, h_i, weights, data_size, blocklength, N0, B, l
         Channel gains for each user
     weights : numpy.ndarray
         Weights for each user
-    data_size : numpy.ndarray
-        Data size for each user
+    packet_size : numpy.ndarray
+        Packet size for each user
     blocklength : numpy.ndarray or float
         Blocklength allocated to each user
     N0 : float
@@ -82,7 +82,7 @@ def objective_function_fbl(power, h_i, weights, data_size, blocklength, N0, B, l
     snr[mask] = power[mask] * h_i[mask] / (N0 * B)
     
     # Calculate rate for each user (bits per channel use)
-    rate = data_size / blocklength
+    rate = packet_size / blocklength
     
     # Calculate error probability using FBL model
     err_prob = np.ones_like(power)  # Default to 1 (failure)
@@ -142,7 +142,14 @@ def user_selection_fbl(args, wireless_arg, seed, data_size, weights, later_weigh
     
     # Set default blocklength if not provided
     if blocklength is None:
-        blocklength = 500  # Default blocklength
+        blocklength = 700  # Default blocklength
+    
+    # Get packet size (corrected: use wireless_arg['Packet_size'] instead of data_size)
+    if 'Packet_size' in wireless_arg:
+        packet_size = np.ones(args.total_UE) * wireless_arg['Packet_size']
+    else:
+        # Fallback if Packet_size is not defined in wireless_arg
+        packet_size = np.ones(args.total_UE) * args.packet_size if hasattr(args, 'packet_size') else np.ones(args.total_UE) * 500
 
     # User selection strategies (similar to wireless.py)
     if args.selection == 'uni_random':
@@ -163,9 +170,8 @@ def user_selection_fbl(args, wireless_arg, seed, data_size, weights, later_weigh
         active_clients = np.random.choice(user_indices, args.active_UE, replace=False)
 
     # Extract parameters for selected users
-    #h_avg_p = copy.deepcopy(h_avg[active_clients])
     h_i_p = copy.deepcopy(h_i[active_clients])
-    data_size_p = copy.deepcopy(data_size[active_clients])
+    packet_size_p = copy.deepcopy(packet_size[active_clients])
     later_weights_p = copy.deepcopy(later_weights[active_clients])
     weights_p = copy.deepcopy(weights[active_clients])
     
@@ -181,11 +187,9 @@ def user_selection_fbl(args, wireless_arg, seed, data_size, weights, later_weigh
     try:
         # Use power allocation with FBL approximation
         P_opt, obj_val, status = power_allocation_fbl_approx(
-            h_i_p, weights_p, later_weights_p, data_size_p, blocklength_p,
+            h_i_p, weights_p, later_weights_p, packet_size_p, blocklength_p,
             N0, B, P_max, P_sum, theta, Tslot
         )
-
-
 
         if P_opt is not None:
             power_allocated[active_clients] = P_opt
@@ -198,34 +202,24 @@ def user_selection_fbl(args, wireless_arg, seed, data_size, weights, later_weigh
         # Fallback to uniform power allocation
         power_allocated[active_clients] = np.ones(len(active_clients)) * min(P_max, P_sum / len(active_clients))
 
-
-        # Calculate error probability using FBL model
+    # Calculate error probability using FBL model
     if np.isscalar(blocklength):
         bl = np.ones(args.total_UE) * blocklength
     else:
         bl = copy.deepcopy(blocklength)  
 
-    # Calculate objective value based on FBL error model
-    obj_value = objective_function_fbl(power_allocated, h_i, weights, data_size, bl, N0, B, later_weights)
+    # Calculate objective value based on FBL error model (using packet_size instead of data_size)
+    obj_value = objective_function_fbl(power_allocated, h_i, weights, packet_size, bl, N0, B, later_weights)
     
     # Calculate SNR for each user
     snr = power_allocated * h_i / N0 / B
     
-
-    # Calculate error probability using FBL model
-    if np.isscalar(blocklength):
-        bl = np.ones(args.total_UE) * blocklength
-    else:
-        bl = blocklength
-        
     # Calculate rate for each user (bits per channel use)
-    rate = data_size / bl
+    rate = packet_size / bl
     
     # Calculate error probability for each user
     err_prob = np.ones(args.total_UE)  # Default to 1 (failure)
     mask = snr > 0
-
-
     
     if np.any(mask):
         err_prob[mask] = error_prob_fbl(snr[mask], bl[mask], rate[mask])
@@ -238,9 +232,10 @@ def user_selection_fbl(args, wireless_arg, seed, data_size, weights, later_weigh
     proba_success_avg = np.zeros(args.total_UE)
     mask_avg = snr_avg > 0
     
-    
     if np.any(mask_avg):
-        err_prob_avg = error_prob_fbl(snr_avg[mask_avg], bl[mask_avg], rate[mask_avg])
+        # Use packet_size instead of data_size for rate calculation
+        rate_avg = packet_size[mask_avg] / bl[mask_avg]
+        err_prob_avg = error_prob_fbl(snr_avg[mask_avg], bl[mask_avg], rate_avg)
         proba_success_avg[mask_avg] = 1 - err_prob_avg
     
     # Simulate transmission success/failure
@@ -261,19 +256,17 @@ def user_selection_fbl(args, wireless_arg, seed, data_size, weights, later_weigh
     print(f"Number of selected users: {len(active_clients)}")
     print(f"Number of failed transmissions: {fails}")
     print(f"Average error probability: {avg_err_prob:.4f}")
-    print(f"err_prob: {len(err_prob)}")
 
-    #debugging block
-    cnr_i=h_i / N0 / B
-    cnr_active=cnr_i[mask]
-    print(f"Power allocation status: {status}") #debugging the function
-    print(f"Power max:{P_max}, Power sum:{P_sum}")
-    print(f"h_i:{h_i_p}") #debugging for channel
-    print(f"optimal power:{P_opt}") #debugging for power
-    print(f"SNR:{snr[mask]}")
-    print(f"CNR:{cnr_active}")
-    print(f"data_size_p:{data_size_p}")
-
+    # Debugging information
+    cnr_i = h_i / N0 / B
+    cnr_active = cnr_i[mask]
+    print(f"Power allocation status: {status if 'status' in locals() else 'N/A'}")
+    print(f"Power max: {P_max}, Power sum: {P_sum}")
+    print(f"h_i: {h_i_p}")
+    print(f"optimal power: {P_opt if 'P_opt' in locals() else 'N/A'}")
+    print(f"SNR: {snr[mask]}")
+    print(f"CNR: {cnr_active}")
+    print(f"blockength: {blocklength_p}")
+    print(f"packet_size_p: {packet_size_p}")  # Changed from data_size_p to packet_size_p
+    
     return list(set(active_success_clients)), proba_success_avg, fails, 1-avg_err_prob, obj_value
-
-# Additional helper functions can be added as needed

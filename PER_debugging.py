@@ -77,10 +77,10 @@ def debug_fbl_optimization():
     Tslot = wireless_arg['Tslot']
     
     # For FBL error model, we need data size and blocklength
-    data_size = np.ones(K) * 500  # 700 bits per UE
+    data_size = np.ones(K) * 10  # 700 bits per UE
     weights = np.ones(K)  # Equal weights
     later_weights = np.zeros(K)  # No later weights
-    blocklength = np.ones(K) * 500  # 500 channel uses per UE
+    blocklength = np.ones(K) * 100  # 500 channel uses per UE
     
     # Print parameter table
     print("\n=== Optimization Parameters ===")
