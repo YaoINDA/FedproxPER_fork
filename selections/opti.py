@@ -37,6 +37,7 @@ def init_optil_weights(args, wireless_arg):
     return weights, later_weights
 
 def update_optil_weights(args, wireless_arg, loss_weights, num_trained):
+    #why zero weights?
     weights = np.zeros(args.total_UE)
     later_weights = np.zeros(args.total_UE)
     coef_decr = 1

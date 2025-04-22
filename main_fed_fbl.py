@@ -210,6 +210,8 @@ if __name__ == '__main__':
             wireless_arg['decr'] = coef_dec
             print("later weights zero? ", np.sum(later_weights) == 0)
             
+            #debugging
+            print(f"Weights before FBL selection: min={np.min(weights)}, max={np.max(weights)}, mean={np.mean(weights)}")
             # Use FBL-based user selection instead of the original one
             idxs_users, proba_success_avg, fails, success_rate, obj_values = user_selection_fbl(
                 args, wireless_arg, seed_round, packet_size, weights, later_weights, blocklength
