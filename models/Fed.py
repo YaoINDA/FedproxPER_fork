@@ -82,7 +82,11 @@ def calc_weightAggreg(data_weight, active_clients, args, wireless_arg):
         print("args aggregation erroneous\n")
         print("================================\n")
         ratio_aggreg= 1
-    if (args.selection == 'uni_random' or args.selection == 'best_loss' or args.selection == 'best_channel' or args.selection == 'best_channel_ratio' 
+        # Add case for linear_fbl
+    if args.selection == 'linear_fbl':
+        weight_c = np.ones(len(active_clients)) * 1/args.total_UE * ratio_aggreg
+
+    elif (args.selection == 'uni_random' or args.selection == 'best_loss' or args.selection == 'best_channel' or args.selection == 'best_channel_ratio' 
         or args.selection == 'best_exact_loss'):
         weight_c = copy.deepcopy(data_weight[active_clients]) *ratio_aggreg
         
