@@ -38,7 +38,10 @@ from test_synthetic_dataset import read_data
 if __name__ == '__main__':
     # Parse arguments
     args = args_parser()
-    print(args)
+    # Force linear FBL selection regardless of what was passed in arguments
+    args.selection = "linear_fbl"
+    print(f"NOTE: Overriding selection method to '{args.selection}' as this script only implements linear FBL selection")
+    #print(args)
     
     if args.no_FL: # centralized learning option
         args.total_UE = 1

@@ -5,14 +5,20 @@ def init_optil_weights(args, wireless_arg):
     later_weights = np.zeros(args.total_UE)
     if args.selection == 'solve_opti_loss_size':
         weights = copy.deepcopy(args.datasize_weight)
-    elif args.selection == 'solve_opti_loss_size2' or args.selection == 'solve_opti_loss_size4':
+    elif args.selection == 'solve_opti_loss_size2' or args.selection == 'solve_opti_loss_size4' or args.selection == 'linear_fbl':
         # weights = args.datasize_weight * 60000
         # weights = args.datasize_weight / np.max(args.datasize_weight) * 10
         weights =  np.ones(args.total_UE)*args.eta_init + args.datasize_weight/np.mean(args.datasize_weight)
         later_weights = np.zeros(args.total_UE)
+        #debugging
+        #print(f"args.datasize_weight/np.mean(args.datasize_weight):{args.datasize_weight/np.mean(args.datasize_weight)}")
     elif args.selection == 'solve_opti_loss':
         weights =  np.ones(args.total_UE)
+    else: #make sure weights are always init.
+        weights =  np.ones(args.total_UE)*args.eta_init + args.datasize_weight/np.mean(args.datasize_weight)
+        later_weights = np.zeros(args.total_UE)
     args.age_Updates = np.zeros(args.total_UE)
+    #why assign weights as zero?
     weights = args.age_Updates
     
     if args.normalize_order=='1':
@@ -45,7 +51,7 @@ def update_optil_weights(args, wireless_arg, loss_weights, num_trained):
     if args.selection == 'solve_opti_loss_size':
         weights = args.datasize_weight + loss_weights
     elif args.selection == 'solve_opti_loss_size2' or args.selection == 'solve_opti_loss_size3' or args.selection == 'solve_opti_size' or \
-        args.selection == 'solve_opti_AoU':
+        args.selection == 'solve_opti_AoU' or args.selection == 'linear_fbl':
         vanishing_rounds = args.vanish
         calculate_coef_S, calculate_coef_rand = create_increasing_decr_functions(num_trained, args, vanishing_rounds*args.total_UE)
         

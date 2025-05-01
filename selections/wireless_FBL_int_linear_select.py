@@ -123,8 +123,8 @@ def LR_selection_FBL(args, wireless_arg, seed, data_size, weights, later_weights
     
     # Calculate gain for each user
     snr_max = P_err_max * h_i / (N0 * B)
-    gain = weights * (0.5 - (mu_values / np.sqrt(2 * np.pi)) * (snr_max - alpha_values))
-    
+    gain = weights * (1-(0.5 - (mu_values / np.sqrt(2 * np.pi)) * (snr_max - alpha_values)))
+    print(f"weights:{weights}")
     # Add later_weights to gain
     gain = gain + later_weights
     
