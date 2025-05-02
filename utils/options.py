@@ -10,7 +10,7 @@ def args_parser():
     parser.add_argument('--round', type=int, default=10, help="rounds of training")
     parser.add_argument('--total_UE', type=int, default=100, help="number of users: N")
     #parser.add_argument('--frac', type=float, default=0.1, help="the fraction of clients: C")
-    parser.add_argument('--active_UE', type=int, default=10, help="number of activate clients: K")
+    parser.add_argument('--active_UE', type=int, default=10, help="number of activate clients: K (default: 10)")
     parser.add_argument('--local_ep', type=int, default=20, help="the number of local epochs: E")
     parser.add_argument('--local_bs', type=int, default=64, help="local batch size: B")
     parser.add_argument('--bs', type=int, default=256, help="test batch size")
@@ -20,6 +20,7 @@ def args_parser():
     parser.add_argument('--weight_decay', type=float, default=0, help="SGD weight_decay (default: 0)")
     parser.add_argument('--total_blocklength', type=int, default=1000, help="total blocklength (default: 1000)")
     parser.add_argument('--packet_size', type=int, default= 500, help="packet size of transmission (default: 500)")
+    parser.add_argument('--E_max', type=int, default=60, help="maximum energy for each round (default:60)")
     #parser.add_argument('--split', type=str, default='user', help="train-test split type, user or sample")
 
     # model arguments
