@@ -1,32 +1,68 @@
 import subprocess
 import time
+from datetime import datetime
 
+# Define the commands to run
 commands = [
-    # MNIST experiments with total_blocklength=1000
-    "python main_fed_fbl.py --dataset mnist --round 200 --iid iid --selection \"weighted_random\" --scenario PER --total_blocklength 1000 --packet_size 100",
-    "python main_fed_fbl.py --dataset mnist --round 200 --iid niid --selection \"weighted_random\" --scenario PER --total_blocklength 1000 --packet_size 100",
+    # MNIST with linear FBL selection
+    "python main_fed_fbl_linear.py --dataset mnist --round 500 --iid iid --selection \"linear_fbl\" --scenario PER --total_blocklength 1000 --packet_size 100",
     
-    # CIFAR experiments with total_blocklength=1000
-    "python main_fed_fbl.py --dataset cifar --round 800 --iid iid --selection \"weighted_random\" --scenario PER --total_blocklength 1000 --packet_size 100",
-    "python main_fed_fbl.py --dataset cifar --round 800 --iid niid --selection \"weighted_random\" --scenario PER --total_blocklength 1000 --packet_size 100",
+    # MNIST with weighted random selection
+    "python main_fed_fbl.py --dataset mnist --round 500 --iid iid --selection \"weighted_random\" --scenario PER --total_blocklength 1000 --packet_size 100",
     
-    # MNIST experiments with total_blocklength=3000
-    "python main_fed_fbl.py --dataset mnist --round 200 --iid iid --selection \"weighted_random\" --scenario PER --total_blocklength 3000 --packet_size 100",
-    "python main_fed_fbl.py --dataset mnist --round 200 --iid niid --selection \"weighted_random\" --scenario PER --total_blocklength 3000 --packet_size 100",
+    # MNIST with best channel ratio selection
+    "python main_fed_fbl.py --dataset mnist --round 500 --iid iid --selection \"best_channel_ratio\" --scenario PER --total_blocklength 1000 --packet_size 100",
     
-    # CIFAR experiments with total_blocklength=3000
-    "python main_fed_fbl.py --dataset cifar --round 800 --iid iid --selection \"weighted_random\" --scenario PER --total_blocklength 3000 --packet_size 100",
-    "python main_fed_fbl.py --dataset cifar --round 800 --iid niid --selection \"weighted_random\" --scenario PER --total_blocklength 3000 --packet_size 100"
+    # CIFAR with linear FBL selection
+    "python main_fed_fbl_linear.py --dataset cifar --round 1000 --iid iid --selection \"linear_fbl\" --scenario PER --total_blocklength 1000 --packet_size 100",
+    
+    # CIFAR with weighted random selection
+    "python main_fed_fbl.py --dataset cifar --round 1000 --iid iid --selection \"weighted_random\" --scenario PER --total_blocklength 1000 --packet_size 100",
+    
+    # CIFAR with best channel ratio selection
+    "python main_fed_fbl.py --dataset cifar --round 1000 --iid iid --selection \"best_channel_ratio\" --scenario PER --total_blocklength 1000 --packet_size 100"
 ]
 
-for i, cmd in enumerate(commands):
-    print(f"\n[{i+1}/{len(commands)}] Running: {cmd}\n")
-    start_time = time.time()
+# Create a log file for the experimental results
+log_filename = f"experiment_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+
+with open(log_filename, "w") as log_file:
+    log_file.write(f"Federated Learning Experiments Log - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+    log_file.write("=" * 80 + "\n\n")
     
-    # Execute the command
-    process = subprocess.Popen(cmd, shell=True)
-    process.wait()
-    
-    elapsed_time = time.time() - start_time
-    print(f"\nCommand completed in {elapsed_time:.2f} seconds")
-    print("-" * 80)
+    # Run each command sequentially
+    for i, cmd in enumerate(commands):
+        start_time = time.time()
+        
+        # Print and log the command being executed
+        print(f"\n[{i+1}/{len(commands)}] Running: {cmd}\n")
+        log_file.write(f"Experiment {i+1}/{len(commands)}\n")
+        log_file.write(f"Command: {cmd}\n")
+        log_file.write(f"Start time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        log_file.flush()  # Ensure the log is written even if the program crashes
+        
+        try:
+            # Execute the command
+            process = subprocess.Popen(cmd, shell=True)
+            process.wait()
+            
+            # Calculate and log the elapsed time
+            elapsed_time = time.time() - start_time
+            hours, remainder = divmod(elapsed_time, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            
+            time_str = f"{int(hours):02d}:{int(minutes):02d}:{int(seconds):02d}"
+            print(f"\nCommand completed in {time_str}")
+            log_file.write(f"End time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            log_file.write(f"Duration: {time_str}\n")
+            log_file.write(f"Exit code: {process.returncode}\n")
+            log_file.write("-" * 80 + "\n\n")
+            log_file.flush()
+            
+        except Exception as e:
+            print(f"\nError executing command: {e}")
+            log_file.write(f"Error: {e}\n")
+            log_file.write("-" * 80 + "\n\n")
+            log_file.flush()
+
+print(f"\nAll experiments completed. Log saved to {log_filename}")
