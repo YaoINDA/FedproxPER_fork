@@ -1,0 +1,14 @@
+Federated Learning Experiments Log - 2025-05-03 01:20:34
+================================================================================
+
+Experiment 1/6
+Command: python main_fed_fbl_linear.py --dataset mnist --round 500 --iid iid --selection "linear_fbl" --scenario PER --total_blocklength 1000 --packet_size 100
+Start time: 2025-05-03 01:20:34
+End time: 2025-05-03 01:20:38
+Duration: 00:00:04
+Exit code: 1
+--------------------------------------------------------------------------------
+
+Experiment 2/6
+Command: python main_fed_fbl.py --dataset mnist --round 500 --iid iid --selection "weighted_random" --scenario PER --total_blocklength 1000 --packet_size 100
+Start time: 2025-05-03 01:20:38

@@ -15,13 +15,23 @@ def init_saving_doc(args):
         os.mkdir(folder_path)
      # initiate log files
     
-    # Add prefixes for E_max, blocklength, and selection
+    # Get the script name that is being run
+    script_name = os.path.basename(sys.argv[0]).replace('.py', '')
+    
+    # Add prefixes for script name, E_max, blocklength, and selection
+    script_prefix = f"{script_name}"
     e_max_prefix = f"E{args.E_max}" if hasattr(args, 'E_max') else "E60"  # Default E_max is 60
     blocklength_prefix = f"B{args.total_blocklength}" if hasattr(args, 'total_blocklength') else "B0"
     selection_prefix = f"S{args.selection}"
     
-    tag = '{}/{}_{}_{}_{}_N{}_K{}_lr{:.3f}_bs{:d}_epo{:d}_mu{:.4f}_seed{}_Wseed{}_iid{}_alpha{:.3f}.csv'
-    saveFileName = tag.format(folder_path, 
+    # Convert any float values to integers for parameters that should be integers
+    local_bs = int(args.local_bs) if isinstance(args.local_bs, float) else args.local_bs
+    local_ep = int(args.local_ep) if isinstance(args.local_ep, float) else args.local_ep
+    
+    # Count the number of {} placeholders to ensure they match the arguments
+    tag = '{}/{}_{}_{}_{}_{}_N{}_K{}_lr{:.3f}_bs{}_epo{}_mu{:.4f}_seed{}_Wseed{}_iid{}_alpha{:.3f}.csv'
+    saveFileName = tag.format(
+                            folder_path, 
                             script_prefix,
                             e_max_prefix, 
                             blocklength_prefix, 
@@ -30,8 +40,8 @@ def init_saving_doc(args):
                             args.total_UE, 
                             args.active_UE,
                             args.lr, 
-                            args.local_bs, 
-                            args.local_ep,
+                            local_bs, 
+                            local_ep,
                             args.mu, 
                             args.seed,
                             args.wireless_seed,
@@ -46,7 +56,7 @@ def init_saving_doc(args):
             'Round, Epoch,batch_itr,'
             'User, Loss,avg:Loss,test_acc, train_acc, train_loss'.format(
                 ws=args.total_UE,
-                bs=args.local_bs),
+                bs=local_bs),
             file=f)
 
 def update_loss(args, round, ep_id,  batch_id, loss, loss_avg, user_id, train_loss=-1):
@@ -102,8 +112,13 @@ def treat_docs_to_acc(args):
     blocklength_prefix = f"B{args.total_blocklength}" if hasattr(args, 'total_blocklength') else "B0"
     selection_prefix = f"S{args.selection}"
     
-    tag = '{}/{}_{}_{}_{}_{}_{}_N{}_K{}_lr{:.3f}_bs{:d}_epo{:d}_mu{:.4f}_seed{}_Wseed{}_iid{}_alpha{:.3f}_accuracy.csv'
-    saveFileName_bis = tag.format(folder_name, 
+    # Convert any float values to integers for parameters that should be integers
+    local_bs = int(args.local_bs) if isinstance(args.local_bs, float) else args.local_bs
+    local_ep = int(args.local_ep) if isinstance(args.local_ep, float) else args.local_ep
+    
+    tag = '{}/{}_{}_{}_{}_{}_N{}_K{}_lr{:.3f}_bs{}_epo{}_mu{:.4f}_seed{}_Wseed{}_iid{}_alpha{:.3f}_accuracy.csv'
+    saveFileName_bis = tag.format(
+                               folder_name, 
                                script_prefix,
                                e_max_prefix, 
                                blocklength_prefix, 
@@ -112,8 +127,8 @@ def treat_docs_to_acc(args):
                                args.total_UE, 
                                args.active_UE,
                                args.lr, 
-                               args.local_bs, 
-                               args.local_ep,
+                               local_bs, 
+                               local_ep,
                                args.mu, 
                                args.seed,
                                args.wireless_seed,
@@ -122,8 +137,10 @@ def treat_docs_to_acc(args):
     print(saveFileName_bis)
     savetxt(saveFileName_bis, acc, delimiter=',')
     
-    tag = '{}/{}_{}_{}_{}_{}_{}_N{}_K{}_lr{:.3f}_bs{:d}_epo{:d}_mu{:.4f}_seed{}_Wseed{}_iid{}_alpha{:.3f}_tr_acc.csv'
-    saveFileName_bis = tag.format(folder_name, 
+    tag = '{}/{}_{}_{}_{}_{}_N{}_K{}_lr{:.3f}_bs{}_epo{}_mu{:.4f}_seed{}_Wseed{}_iid{}_alpha{:.3f}_tr_acc.csv'
+    saveFileName_bis = tag.format(
+                               folder_name, 
+                               script_prefix,
                                e_max_prefix, 
                                blocklength_prefix, 
                                selection_prefix,
@@ -131,8 +148,8 @@ def treat_docs_to_acc(args):
                                args.total_UE, 
                                args.active_UE,
                                args.lr, 
-                               args.local_bs, 
-                               args.local_ep,
+                               local_bs, 
+                               local_ep,
                                args.mu, 
                                args.seed,
                                args.wireless_seed,
@@ -141,8 +158,10 @@ def treat_docs_to_acc(args):
     print(saveFileName_bis)
     savetxt(saveFileName_bis, train_acc_full, delimiter=',')
     
-    tag = '{}/{}_{}_{}_{}_{}_{}_N{}_K{}_lr{:.3f}_bs{:d}_epo{:d}_mu{:.4f}_seed{}_Wseed{}_iid{}_alpha{:.3f}_tr_loss.csv'
-    saveFileName_bis = tag.format(folder_name, 
+    tag = '{}/{}_{}_{}_{}_{}_N{}_K{}_lr{:.3f}_bs{}_epo{}_mu{:.4f}_seed{}_Wseed{}_iid{}_alpha{:.3f}_tr_loss.csv'
+    saveFileName_bis = tag.format(
+                               folder_name, 
+                               script_prefix,
                                e_max_prefix, 
                                blocklength_prefix, 
                                selection_prefix,
@@ -150,8 +169,8 @@ def treat_docs_to_acc(args):
                                args.total_UE, 
                                args.active_UE,
                                args.lr, 
-                               args.local_bs, 
-                               args.local_ep,
+                               local_bs, 
+                               local_ep,
                                args.mu, 
                                args.seed,
                                args.wireless_seed,
