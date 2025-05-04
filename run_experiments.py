@@ -4,23 +4,41 @@ from datetime import datetime
 
 # Define the commands to run
 commands = [
-    # MNIST with linear FBL selection
-    "python main_fed_fbl_linear.py --dataset mnist --round 500 --iid iid --selection \"linear_fbl\" --scenario PER --total_blocklength 1000 --packet_size 100",
+    # MNIST with linear FBL selection (blocklength 1000)
+    "python main_fed_fbl_linear.py --dataset mnist --round 500 --iid iid --selection \"linear_fbl\" --scenario PER --total_blocklength 1000 --packet_size 100 --name blocklength_1000_mnist",
     
-    # MNIST with weighted random selection
-    "python main_fed_fbl.py --dataset mnist --round 500 --iid iid --selection \"weighted_random\" --scenario PER --total_blocklength 1000 --packet_size 100",
+    # MNIST with weighted random selection (blocklength 1000)
+    "python main_fed_fbl.py --dataset mnist --round 500 --iid iid --selection \"weighted_random\" --scenario PER --total_blocklength 1000 --packet_size 100 --name blocklength_1000_mnist",
     
-    # MNIST with best channel ratio selection
-    "python main_fed_fbl.py --dataset mnist --round 500 --iid iid --selection \"best_channel_ratio\" --scenario PER --total_blocklength 1000 --packet_size 100",
+    # MNIST with best channel ratio selection (blocklength 1000)
+    "python main_fed_fbl.py --dataset mnist --round 500 --iid iid --selection \"best_channel\" --scenario PER --total_blocklength 1000 --packet_size 100 --name blocklength_1000_mnist",
+    
+    # MNIST with solve_opti_loss_size2 selection as benchmark (blocklength 1000)
+    "python main_fed_benchmark.py --dataset mnist --round 500 --iid iid --selection \"solve_opti_loss_size2\" --scenario PER --total_blocklength 1000 --packet_size 100 --name blocklength_1000_mnist",
+    
+    # MNIST with linear FBL selection (blocklength 2000)
+    "python main_fed_fbl_linear.py --dataset mnist --round 500 --iid iid --selection \"linear_fbl\" --scenario PER --total_blocklength 2000 --packet_size 100 --name blocklength_2000_mnist",
+    
+    # MNIST with weighted random selection (blocklength 2000)
+    "python main_fed_fbl.py --dataset mnist --round 500 --iid iid --selection \"weighted_random\" --scenario PER --total_blocklength 2000 --packet_size 100 --name blocklength_2000_mnist",
+    
+    # MNIST with best channel ratio selection (blocklength 2000)
+    "python main_fed_fbl.py --dataset mnist --round 500 --iid iid --selection \"best_channel\" --scenario PER --total_blocklength 2000 --packet_size 100 --name blocklength_2000_mnist",
+    
+    # MNIST with solve_opti_loss_size2 selection as benchmark (blocklength 2000)
+    "python main_fed_benchmark.py --dataset mnist --round 500 --iid iid --selection \"solve_opti_loss_size2\" --scenario PER --total_blocklength 2000 --packet_size 100 --name blocklength_2000_mnist",
     
     # CIFAR with linear FBL selection
-    "python main_fed_fbl_linear.py --dataset cifar --round 1000 --iid iid --selection \"linear_fbl\" --scenario PER --total_blocklength 1000 --packet_size 100",
+    "python main_fed_fbl_linear.py --dataset cifar --round 1000 --iid iid --selection \"linear_fbl\" --scenario PER --total_blocklength 1000 --packet_size 100 --name blocklength_1000_cifar",
     
     # CIFAR with weighted random selection
-    "python main_fed_fbl.py --dataset cifar --round 1000 --iid iid --selection \"weighted_random\" --scenario PER --total_blocklength 1000 --packet_size 100",
+    "python main_fed_fbl.py --dataset cifar --round 1000 --iid iid --selection \"weighted_random\" --scenario PER --total_blocklength 1000 --packet_size 100 --name blocklength_1000_cifar",
     
     # CIFAR with best channel ratio selection
-    "python main_fed_fbl.py --dataset cifar --round 1000 --iid iid --selection \"best_channel_ratio\" --scenario PER --total_blocklength 1000 --packet_size 100"
+    "python main_fed_fbl.py --dataset cifar --round 1000 --iid iid --selection \"best_channel\" --scenario PER --total_blocklength 1000 --packet_size 100 --name blocklength_1000_cifar",
+    
+    # CIFAR with solve_opti_loss_size2 selection as benchmark
+    "python main_fed_benchmark.py --dataset cifar --round 1000 --iid iid --selection \"solve_opti_loss_size2\" --scenario PER --total_blocklength 1000 --packet_size 100 --name blocklength_1000_cifar"
 ]
 
 # Create a log file for the experimental results

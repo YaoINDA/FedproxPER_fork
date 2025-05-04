@@ -25,7 +25,7 @@ from models.Fed import FedAvg, FedAggregation
 from models.evaluation import test_img
 
 # Import the benchmark wireless functions instead of standard wireless functions
-from selections.wireless_FBL_benchmark import wireless_param, update_wireless, user_selection_benchmark
+from selections.wireless_benchmark import wireless_param, update_wireless, user_selection_benchmark
 from selections.opti import init_optil_weights, update_optil_weights, update_success_trained
 
 # from models.vgg1 import *

@@ -9,7 +9,7 @@ import numpy as np
 from torchvision import datasets, transforms
 import torch
 
-from utils.save_results import init_saving_doc, update_loss, update_acc, treat_docs_to_acc
+from utils.save_results import init_saving_doc, update_loss, update_acc, treat_docs_to_acc, update_fails
 from utils.sampling import mnist_iid, mnist_noniid, cifar_iid
 from utils.sampling_func import DataPartitioner
 from utils.options import args_parser
@@ -215,8 +215,10 @@ if __name__ == '__main__':
             wireless_arg['incr'] = coef_inc
             wireless_arg['decr'] = coef_dec
             print("later weights zero? ", np.sum(later_weights)==0)
-            idxs_users,proba_success_avg , fails, errorprob, obj_values = user_selection(args, wireless_arg, seed_round, datasize_weight,weights,later_weights)
+            idxs_users, proba_success_avg, fails, errorprob, obj_values = user_selection(args, wireless_arg, seed_round, datasize_weight, weights, later_weights)
             num_trained, list_trained,bool_trained,  vanish_index = update_success_trained(args, idxs_users, list_trained,bool_trained, vanish_index)
+            # Append fails to the list
+            fails_list.append(fails)
         else:
             print("args.scenario argument is wrong")
             np.random.seed(seed_round)
@@ -304,3 +306,5 @@ if __name__ == '__main__':
     # plt.ylabel('train_loss')
     # plt.savefig('./save/fed_{}_{}_{}_K{}_iid{}.png'.format(args.dataset, args.model, args.round, args.active_UE, args.iid))
     treat_docs_to_acc(args)
+    # Update fails at the end of training
+    update_fails(args, fails_list)

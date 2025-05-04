@@ -139,6 +139,7 @@ def user_selection_fbl(args, wireless_arg, seed, data_size, weights, later_weigh
         print(f"Using data_size array with shape: {np.shape(data_size_array)}")
 
     # User selection strategies
+    
     if args.selection == 'uni_random':
         print("Selection method: uniform random")
         np.random.seed(seed)

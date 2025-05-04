@@ -74,6 +74,42 @@ def update_acc(args, round, test_acc, train_acc, train_loss=-1):
               '{val:.4f}, {val_tr:.4f}, {train_loss:.4f}'
               .format(rd=round, filler=-1, val=test_acc, val_tr=train_acc, train_loss=train_loss), file=f)
 
+def update_fails(args, fails_list):
+    """
+    Save the fails (number of failed clients) for each round in a separate CSV file.
+    """
+    folder_name = args.folder_path
+    # Get the script name that is being run
+    script_name = os.path.basename(sys.argv[0]).replace('.py', '')
+    # Add prefixes for script name, E_max, blocklength, and selection
+    script_prefix = f"{script_name}"
+    e_max_prefix = f"E{args.E_max}" if hasattr(args, 'E_max') else "E60"  # Default E_max is 60
+    blocklength_prefix = f"B{args.total_blocklength}" if hasattr(args, 'total_blocklength') else "B0"
+    selection_prefix = f"S{args.selection}"
+    # Convert any float values to integers for parameters that should be integers
+    local_bs = int(args.local_bs) if isinstance(args.local_bs, float) else args.local_bs
+    local_ep = int(args.local_ep) if isinstance(args.local_ep, float) else args.local_ep
+    tag = '{}/{}_{}_{}_{}_{}_N{}_K{}_lr{:.3f}_bs{}_epo{}_mu{:.4f}_seed{}_Wseed{}_iid{}_alpha{:.3f}_fails.csv'
+    saveFileName_fails = tag.format(
+        folder_name, 
+        script_prefix,
+        e_max_prefix, 
+        blocklength_prefix, 
+        selection_prefix,
+        args.dataset,
+        args.total_UE, 
+        args.active_UE,
+        args.lr, 
+        local_bs, 
+        local_ep,
+        args.mu, 
+        args.seed,
+        args.wireless_seed,
+        args.iid, 
+        args.alpha)
+    print(saveFileName_fails)
+    np.savetxt(saveFileName_fails, fails_list, delimiter=',', fmt='%d')
+
 def treat_docs_to_acc(args):
     results = []
     count = 0
@@ -178,3 +214,25 @@ def treat_docs_to_acc(args):
                                args.alpha)
     print(saveFileName_bis)
     savetxt(saveFileName_bis, train_loss_full, delimiter=',')
+
+    # Save fails for each round in a separate CSV file
+    tag = '{}/{}_{}_{}_{}_{}_N{}_K{}_lr{:.3f}_bs{}_epo{}_mu{:.4f}_seed{}_Wseed{}_iid{}_alpha{:.3f}_fails.csv'
+    saveFileName_fails = tag.format(
+                               folder_name, 
+                               script_prefix,
+                               e_max_prefix, 
+                               blocklength_prefix, 
+                               selection_prefix,
+                               args.dataset,
+                               args.total_UE, 
+                               args.active_UE,
+                               args.lr, 
+                               local_bs, 
+                               local_ep,
+                               args.mu, 
+                               args.seed,
+                               args.wireless_seed,
+                               args.iid, 
+                               args.alpha)
+    print(saveFileName_fails)
+    savetxt(saveFileName_fails, fails_list, delimiter=',', fmt='%d')

@@ -6,6 +6,8 @@ similar to wireless.py, but uses the finite blocklength (FBL) error probability 
 instead of the exponential approximation.
 """
 
+__all__ = ['wireless_param', 'update_wireless', 'user_selection_benchmark']
+
 import numpy as np
 from selections.function_user_selection import user_selection_opti, naif_power_allocation
 from selections.function_user_selection_allCombinations import choose_comb, solve_opti_all, solve_opti_wrt_P
@@ -181,7 +183,7 @@ def objective_function(x, alpha, h_i, S_i, data_size, const, later_weights, P_ma
     return np.sum(vec[x > 0])
 
 
-def user_selection(args, wireless_arg, seed, data_size, weights, later_weights):
+def user_selection_benchmark(args, wireless_arg, seed, data_size, weights, later_weights):
     """
     Select users for federated learning using various selection strategies,
     with FBL-based error probability calculation.
