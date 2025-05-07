@@ -155,6 +155,7 @@ if __name__ == '__main__':
     net_best = None
     best_loss = None
     val_acc_list, net_list = [], []
+    fails_list = []  # Initialize fails_list to collect fails for each round
 
     # Initialize wireless parameters if using PER scenario
     wireless_arg = {}
@@ -216,6 +217,7 @@ if __name__ == '__main__':
             idxs_users, proba_success_avg, fails, success_rate, obj_values = user_selection_fbl(
                 args, wireless_arg, seed_round, packet_size, weights, later_weights, blocklength
             )
+            fails_list.append(fails)  # Collect fails for this round
             
             num_trained, list_trained, bool_trained, vanish_index = update_success_trained(
                 args, idxs_users, list_trained, bool_trained, vanish_index
@@ -324,4 +326,4 @@ if __name__ == '__main__':
             log_dict.update(class_accuracy)
 
     # Process results for saving
-    treat_docs_to_acc(args)
+    treat_docs_to_acc(args, fails_list)  # Pass fails_list to treat_docs_to_acc

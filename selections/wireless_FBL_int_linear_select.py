@@ -145,7 +145,7 @@ def LR_selection_FBL(args, wireless_arg, seed, data_size, weights, later_weights
             active_clients.append(idx)
             gains_selected.append(gain[idx])
             P_left -= P_err_max[idx]
-            print(f"Selected user {idx}, gain: {gain[idx]:.4f}, power: {P_err_max[idx]:.4f}, P_left: {P_left:.4f}")
+            print(f"Selected user {idx}, gain: {gain[idx]-later_weights[idx]:.4f}, power: {P_err_max[idx]:.4f}, P_left: {P_left:.4f}")
         else:
             # If we can't select this user, continue to the next one
             continue
@@ -153,14 +153,58 @@ def LR_selection_FBL(args, wireless_arg, seed, data_size, weights, later_weights
     K_select = len(active_clients)
     print(f"Selected {K_select} users out of {K}")
     
-    # Calculate return values
-    proba_success_avg = np.ones(args.total_UE)  # Always 1 as specified
-    fails = K - K_select
-    success_rate = K_select / K if K > 0 else 0
+    # Original code:
+    # proba_success_avg = np.ones(args.total_UE)  # Always 1 as specified
+    # fails = K - K_select
+    # success_rate = K_select / K if K > 0 else 0
+    # obj_value = sum(gains_selected)
+    
+    # Calculate power allocation
+    power_allocated = np.zeros(args.total_UE)
+    for idx in active_clients:
+        power_allocated[idx] = P_err_max[idx]
+    
+    # Calculate SNR for each user
+    snr = power_allocated * h_i / (N0 * B)
+    
+    # Calculate rate for each user (bits per channel use)
+    rate = np.zeros(args.total_UE)
+    rate[snr > 0] = packet_size[snr > 0] / blocklength_array[snr > 0]
+    
+    # Calculate error probability for each user using FBL model
+    err_prob = np.ones(args.total_UE)  # Default to 1 (failure)
+    mask = snr > 0
+    if np.any(mask):
+        err_prob[mask] = error_prob_fbl_approx(snr[mask], blocklength_array[mask], packet_size[mask])
+        print(f"err_prob[mask]: {err_prob[mask]},blocklength_array[mask]: {blocklength_array[mask]},snr[mask]: {snr[mask]}")
+    # Success probability is complement of error probability
+    proba_success = 1 - err_prob
+    
+    # Calculate average success probability based on average channel
+    snr_avg = power_allocated * h_avg / (N0 * B)
+    proba_success_avg = np.zeros(args.total_UE)
+    mask_avg = snr_avg > 0
+    if np.any(mask_avg):
+        proba_success_avg[mask_avg] = 1 - error_prob_fbl_approx(snr_avg[mask_avg], 
+                                                               blocklength_array[mask_avg], 
+                                                               packet_size[mask_avg])
+    
+    # Simulate transmission success/failure
+    active_success_clients = []
+    fails = 0
+    np.random.seed(seed + 123)
+    for idx in active_clients:
+        success = np.random.binomial(1, proba_success[idx])
+        if success:
+            active_success_clients.append(idx)
+        else:
+            fails += 1
+    
+    success_rate = len(active_success_clients) / K if K > 0 else 0
     obj_value = sum(gains_selected)
     
     print(f"Objective value (sum of gains): {obj_value:.4f}")
-    print(f"Success rate: {success_rate:.4f}")
+    print(f"Success rate: {success_rate:.4f}, fails: {fails}")
     
     return active_clients, proba_success_avg, fails, success_rate, obj_value
 

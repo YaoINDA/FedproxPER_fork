@@ -35,7 +35,7 @@ def wireless_param(args, data_weight, nb_data_assigned):
         'm': dB2power(0.023),
         'M' : 16,
         'Mprime': 15,
-        'E_max':60, #mJ
+        'E_max':args.E_max, #mJ default value 60
         'Tslot': 1.3,
         'sigma':args.sigma, #1
         'freq' : 2400, #Mhz

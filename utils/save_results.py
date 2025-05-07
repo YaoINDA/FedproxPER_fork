@@ -110,7 +110,7 @@ def update_fails(args, fails_list):
     print(saveFileName_fails)
     np.savetxt(saveFileName_fails, fails_list, delimiter=',', fmt='%d')
 
-def treat_docs_to_acc(args):
+def treat_docs_to_acc(args,fails_list):
     results = []
     count = 0
     with open(args.out_fname, newline='') as f:
